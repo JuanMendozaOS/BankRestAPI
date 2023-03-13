@@ -1,5 +1,5 @@
 using BankRestAPI.Data;
-using BankRestAPI.Models.Bank;
+using BankRestAPI.Models;
 using BankRestAPI.Services;
 using Microsoft.EntityFrameworkCore;
 
@@ -8,7 +8,8 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 
 builder.Services.AddControllers();
-
+//builder.Services.AddControllers(
+//    options => options.SuppressImplicitRequiredAttributeForNonNullableReferenceTypes = true);
 // Add database context
 builder.Services.AddDbContext<BankDbContext>(options => 
     options.UseNpgsql(builder.Configuration.GetConnectionString("BankAPIConnectionString"))
@@ -16,6 +17,7 @@ builder.Services.AddDbContext<BankDbContext>(options =>
 
 // Inject service dependency 
 builder.Services.AddScoped(typeof(IEntityService<Bank>), typeof(BankService));
+builder.Services.AddScoped<CustomerService>();
 
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle

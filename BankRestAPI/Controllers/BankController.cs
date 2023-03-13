@@ -1,11 +1,11 @@
-﻿using BankRestAPI.Models.Bank;
+﻿using BankRestAPI.Models;
 using BankRestAPI.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BankRestAPI.Controllers
 {
     [ApiController]
-    [Route("/api/v1/[controller]")]
+    [Route("/api/v1/[controller]s")]
     public class BankController : Controller
     {
         private readonly ILogger<BankController> _logger;
@@ -21,7 +21,7 @@ namespace BankRestAPI.Controllers
         [HttpGet]
         public async Task<IActionResult> GetBanks()
         {
-            _logger.LogDebug("Prueba logger");
+            _logger.LogWarning("Prueba logger");
             return Ok(await _bankService.GetAll());
         }
 
