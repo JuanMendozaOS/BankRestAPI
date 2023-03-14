@@ -23,38 +23,37 @@ namespace BankRestAPI.Controllers
 
         [HttpGet]
         public async Task<IActionResult> GetCustomers()
-        { 
+        {
             return Ok(await _customerService.GetAll());
         }
 
         [HttpGet("{documentNumber}")]
         public async Task<IActionResult> GetCustomer(string documentNumber)
         {
-            if (string.IsNullOrEmpty(documentNumber)) { return BadRequest(); }
             var customer = await _customerService.GetById(documentNumber);
-            if (customer != null)
+
+            if (customer == null)
             {
-                return Ok(customer);
+                return NotFound();
             }
 
-            return NotFound();
+            return Ok(customer);
         }
 
         [HttpPost]
         public async Task<IActionResult> AddCustomer(Customer customer)
         {
-
-            if (ContainsNullOrEmpty(customer))
-            {
-                return BadRequest();
-            }
-            if (CustomerExists(customer))
-            {
-                return BadRequest("Customer already exists");
-            }
-
             try
             {
+                if (ContainsNullOrEmpty(customer))
+                {
+                    return BadRequest();
+                }
+                if (CustomerExists(customer))
+                {
+                    return BadRequest("Customer already exists");
+                }
+
                 return StatusCode(201, await _customerService.Create(customer));
             }
             catch (Exception ex)
@@ -64,29 +63,42 @@ namespace BankRestAPI.Controllers
 
         }
 
-        [HttpPut]
-        [Route("{documentNumber}")]
-        public async Task<IActionResult> UpdateCustomer([FromRoute] string documentNumber, [FromBody] Customer customer)
+        [HttpPut("{documentNumber}")]
+        public async Task<IActionResult> UpdateCustomer(string documentNumber, Customer customer)
         {
-            _logger.LogDebug("Dentro de update");
+            _logger.LogInformation("Dentro de update");
             var entity = await _customerService.GetById(documentNumber);
 
-            if (HasNullValue(documentNumber, entity))
+            if (HasNullValue(documentNumber, customer))
             {
                 return BadRequest();
             }
+            Update(entity, customer);
 
-            return Ok(Update(entity));
+            return Ok(entity);
         }
 
-        private async Task<Customer> Update(Customer entity)
+
+        [HttpDelete("{documentNumber}")]
+        public async Task<IActionResult> DeleteCustomer(string documentNumber)
         {
-            if (!string.IsNullOrEmpty(entity.FullName))
+            var customer = await _customerService.GetById(documentNumber);
+
+            if (customer == null) { return NotFound($"Customer with Document Number {documentNumber} not found"); }
+
+            await _customerService.Delete(documentNumber);
+
+            return Ok(await _customerService.GetAll());
+        }
+
+        private async void Update(Customer entity, Customer customer)
+        {
+            if (!string.IsNullOrEmpty(customer.FullName))
             {
-                entity.FullName = entity.FullName;
+                entity.FullName = customer.FullName;
             }
 
-            return await _customerService.Update(entity);
+            await _customerService.Update(entity);
         }
 
         private bool HasNullValue(string documentNumber, Customer customer)

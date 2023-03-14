@@ -16,8 +16,11 @@ builder.Services.AddDbContext<BankDbContext>(options =>
 );
 
 // Inject service dependency 
-builder.Services.AddScoped(typeof(IEntityService<Bank>), typeof(BankService));
+builder.Services.AddScoped<IEntityService<Bank>, BankService>();
+builder.Services.AddScoped<IEntityService<Account>, AccountService>();
+builder.Services.AddScoped<IEntityService<Transfer>, TransferService>();
 builder.Services.AddScoped<CustomerService>();
+
 
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle

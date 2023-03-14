@@ -30,55 +30,73 @@ namespace BankRestAPI.Controllers
         [HttpGet("{id:guid}")]
         public async Task<IActionResult> GetBank(Guid id)
         {
-            if (id == Guid.Empty) { return BadRequest(); }
             var bank = await _bankService.GetById(id);
-            if (bank != null)
+
+            if (bank == null)
             {
-                return Ok(bank);
+                return NotFound();
             }
 
-            return NotFound();
+            return Ok(bank);
         }
 
 
         [HttpPost]
         public async Task<IActionResult> AddBank(Bank bank)
         {
-            if (ContainsNullOrEmpty(bank)) { return BadRequest(); }
-            if (BankExists(bank)){ return BadRequest(); }
             try
             {
+                if (ContainsNullOrEmpty(bank) || BankExists(bank) ) 
+                { 
+                    return BadRequest(); 
+                }
+                
                 return StatusCode(201, await _bankService.Create(bank));
 
-            }catch (Exception ex)
+            }
+            catch (Exception ex)
             {
                 return StatusCode(500, ex.Message);
             }
         }
 
-        private bool BankExists(Bank bank)
-        {
-            if(_dbContext.Bank.Any(b => b.Name == bank.Name))
-            {
-                return true;
-            }
-            return false;
-        }
-
-       
-
         [HttpPut]
         [Route("{id:guid}")]
         public async Task<IActionResult> UpdateBank(Guid id, Bank bank)
         {
-            // TODO: Añadir validaciones
-            if (id == Guid.Empty) { return BadRequest("Id cannot be empty"); }
 
             var entity = await _bankService.GetById(id);
 
-            if (entity == null) { return NotFound($"Bank with id {id} not found"); }
-            if (bank == null) { return BadRequest("Body cannot be empty"); }
+            if (entity == null)
+            {
+                _logger.LogError($"Bank {entity} is null");
+                return BadRequest();
+            }
 
+            if (BankExists(bank))
+            {
+                return BadRequest();
+            }
+
+            Update(entity, bank);
+
+            return Ok(entity);
+        }
+
+        [HttpDelete("{id:guid}")]
+        public async Task<IActionResult> DeleteBank(Guid id)
+        {
+            var bank = await _bankService.GetById(id);
+
+            if (bank == null) { return NotFound($"Bank with id {id} not found"); }
+
+            await _bankService.Delete(id);
+
+            return Ok(await _bankService.GetAll());
+        }
+
+        private async void Update(Bank entity, Bank bank)
+        {
             if (!string.IsNullOrEmpty(bank.Name))
             {
                 entity.Name = bank.Name;
@@ -87,17 +105,7 @@ namespace BankRestAPI.Controllers
             {
                 entity.Address = bank.Address;
             }
-
-            return Ok(await _bankService.Update(entity));
-        }
-
-        [HttpDelete("{id:guid}")]
-        public async Task<IActionResult> DeleteBank(Guid id)
-        {
-            var bank = await _bankService.GetById(id);
-            if (bank == null) { return NotFound($"Bank with id {id} not found"); }
-            await _bankService.Delete(id);
-            return Ok(await _bankService.GetAll());
+            await _bankService.Update(entity);
         }
 
         private bool ContainsNullOrEmpty(Bank bank)
@@ -120,5 +128,21 @@ namespace BankRestAPI.Controllers
 
             return false;
         }
+
+        private bool BankExists(Bank bank)
+        {
+            if (_dbContext.Bank.Any(b => b.Name == bank.Name && b.Id != bank.Id))
+            {
+                _logger.LogError($"Bank {bank.Name} already exists");
+                return true;
+            }
+            if (_dbContext.Bank.Any(b => b.Address == bank.Address && b.Id != bank.Id))
+            {
+                _logger.LogError($"Address {bank.Address} corresponds to another Bank");
+                return true;
+            }
+            return false;
+        }
+
     }
 }

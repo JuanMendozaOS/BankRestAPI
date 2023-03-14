@@ -7,7 +7,7 @@ namespace BankRestAPI.Models
     {
         [JsonIgnore]
         public Guid Id { get; set; } = default!;
-        public long Number { get; set; } = default!;
+        public long? Number { get; set; } = default!;
         public string Currency { get; set; } = default!;
         public decimal Balance { get; set; } = default!;
 
