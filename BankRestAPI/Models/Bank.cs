@@ -7,7 +7,7 @@ namespace BankRestAPI.Models
     
         public Guid Id { get; set; }
         public string Name { get; set; } = default!;
-        public string Adress { get; set; } = default!;
+        public string Address { get; set; } = default!;
 
         // Navigation properties
         [JsonIgnore]

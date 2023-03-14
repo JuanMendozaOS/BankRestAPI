@@ -1,4 +1,5 @@
-﻿using BankRestAPI.Models;
+﻿using BankRestAPI.Data;
+using BankRestAPI.Models;
 using BankRestAPI.Services;
 using Microsoft.AspNetCore.Mvc;
 
@@ -10,33 +11,61 @@ namespace BankRestAPI.Controllers
     {
         private readonly ILogger<BankController> _logger;
         private readonly IEntityService<Bank> _bankService;
+        private readonly BankDbContext _dbContext;
 
         public BankController(ILogger<BankController> logger,
-            IEntityService<Bank> bankService)
+            IEntityService<Bank> bankService, BankDbContext dbContext)
         {
             _logger = logger;
             _bankService = bankService;
+            _dbContext = dbContext;
         }
 
         [HttpGet]
         public async Task<IActionResult> GetBanks()
         {
-            _logger.LogWarning("Prueba logger");
             return Ok(await _bankService.GetAll());
         }
 
         [HttpGet("{id:guid}")]
         public async Task<IActionResult> GetBank(Guid id)
         {
-            return Ok(await _bankService.GetById(id));
+            if (id == Guid.Empty) { return BadRequest(); }
+            var bank = await _bankService.GetById(id);
+            if (bank != null)
+            {
+                return Ok(bank);
+            }
+
+            return NotFound();
         }
 
 
         [HttpPost]
         public async Task<IActionResult> AddBank(Bank bank)
         {
-            return Ok(await _bankService.Create(bank));
+            if (ContainsNullOrEmpty(bank)) { return BadRequest(); }
+            if (BankExists(bank)){ return BadRequest(); }
+            try
+            {
+                return StatusCode(201, await _bankService.Create(bank));
+
+            }catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
         }
+
+        private bool BankExists(Bank bank)
+        {
+            if(_dbContext.Bank.Any(b => b.Name == bank.Name))
+            {
+                return true;
+            }
+            return false;
+        }
+
+       
 
         [HttpPut]
         [Route("{id:guid}")]
@@ -54,9 +83,9 @@ namespace BankRestAPI.Controllers
             {
                 entity.Name = bank.Name;
             }
-            if (!string.IsNullOrEmpty(bank.Adress))
+            if (!string.IsNullOrEmpty(bank.Address))
             {
-                entity.Adress = bank.Adress;
+                entity.Address = bank.Address;
             }
 
             return Ok(await _bankService.Update(entity));
@@ -71,5 +100,25 @@ namespace BankRestAPI.Controllers
             return Ok(await _bankService.GetAll());
         }
 
+        private bool ContainsNullOrEmpty(Bank bank)
+        {
+            if (bank == null)
+            {
+                _logger.LogError("Bank object is null");
+                return true;
+            }
+            if (string.IsNullOrEmpty(bank.Name))
+            {
+                _logger.LogError("BankName is null or empty");
+                return true;
+            }
+            if (string.IsNullOrEmpty(bank.Address))
+            {
+                _logger.LogError("BankAddress is null or empty");
+                return true;
+            }
+
+            return false;
+        }
     }
 }

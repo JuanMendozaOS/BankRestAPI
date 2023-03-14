@@ -13,22 +13,7 @@ namespace BankRestAPI.Data
         public DbSet<Bank> Bank { get; set; }
         public DbSet<Customer> Customer { get; set; }  
         public DbSet<Account> Account { get; set; }
-
-        //protected override void OnModelCreating(ModelBuilder modelBuilder)
-        //{
-        //    modelBuilder.Entity<Account>()
-        //        .HasOne(a => a.Bank) // An account has one bank
-        //        .WithMany()
-        //        .HasForeignKey(a => a.BankId);
-        //    modelBuilder.Entity<Account>()
-        //        .HasOne(a => a.Bank) // An account has one bank
-        //        .WithMany()
-        //        .HasForeignKey(a => a.BankId);
-
-
-        //    base.OnModelCreating(modelBuilder);
-
-        //}
+        public DbSet<Transfer> Transfer { get; set; }
 
     }
 }

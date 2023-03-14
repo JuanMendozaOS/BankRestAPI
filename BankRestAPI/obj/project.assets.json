@@ -2039,11 +2039,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\Bootcamp-5\\source\\repos\\BankRestAPI\\BankRestAPI\\BankRestAPI.csproj",
+      "projectUniqueName": "C:\\Users\\Bootcamp-5\\Desktop\\BankRestAPI\\BankRestAPI\\BankRestAPI.csproj",
       "projectName": "BankRestAPI",
-      "projectPath": "C:\\Users\\Bootcamp-5\\source\\repos\\BankRestAPI\\BankRestAPI\\BankRestAPI.csproj",
+      "projectPath": "C:\\Users\\Bootcamp-5\\Desktop\\BankRestAPI\\BankRestAPI\\BankRestAPI.csproj",
       "packagesPath": "C:\\Users\\Bootcamp-5\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\Bootcamp-5\\source\\repos\\BankRestAPI\\BankRestAPI\\obj\\",
+      "outputPath": "C:\\Users\\Bootcamp-5\\Desktop\\BankRestAPI\\BankRestAPI\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
