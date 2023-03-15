@@ -32,10 +32,9 @@ namespace BankRestAPI.Services
             return await _dbContext.Transfer.ToListAsync();
         }
 
-        public async Task<Transfer> GetById(Guid id)
+        public async Task<Transfer?> GetById(Guid id)
         {
-            var transfer = await _dbContext.Transfer.FindAsync(id);
-            return transfer ?? null;
+            return await _dbContext.Transfer.FindAsync(id);
         }
 
         public async Task<Transfer> Update(Transfer entity)

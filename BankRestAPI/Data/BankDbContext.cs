@@ -11,9 +11,10 @@ namespace BankRestAPI.Data
         {
         }
         public DbSet<Bank> Bank { get; set; }
-        public DbSet<Customer> Customer { get; set; }  
+        public DbSet<Customer> Customer { get; set; }
         public DbSet<Account> Account { get; set; }
         public DbSet<Transfer> Transfer { get; set; }
 
+        
     }
 }

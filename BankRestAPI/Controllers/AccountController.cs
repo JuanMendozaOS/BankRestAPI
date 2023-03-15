@@ -12,11 +12,11 @@ namespace BankRestAPI.Controllers
     {
         private readonly BankDbContext _dbContext;
         private readonly ILogger<AccountController> _logger;
-        private readonly IEntityService<Account> _accountService;
-        private readonly IEntityService<Bank> _bankService;
+        private readonly AccountService _accountService;
+        private readonly BankService _bankService;
         private readonly CustomerService _customerService;
 
-        public AccountController(BankDbContext dbContext, ILogger<AccountController> logger, IEntityService<Account> accountService, IEntityService<Bank> bankService, CustomerService customerService)
+        public AccountController(BankDbContext dbContext, ILogger<AccountController> logger, AccountService accountService, BankService bankService, CustomerService customerService)
         {
             _dbContext = dbContext;
             _logger = logger;
@@ -30,7 +30,7 @@ namespace BankRestAPI.Controllers
         {
             return Ok(await _accountService.GetAll());
         }
-
+        
         [HttpGet("{id:guid}")]
         public async Task<IActionResult> GetAccount(Guid id)
         {
@@ -58,10 +58,12 @@ namespace BankRestAPI.Controllers
                 {
                     return BadRequest("El saldo de la cuenta no puede ser negativo");
                 }
+                Account entity = account;
 
-                account.Customer = await _customerService.GetById(account.CustomerDocumentNumber);
-                account.Bank = await _bankService.GetById(account.BankId);
-                return StatusCode(201, await _accountService.Create(account));
+                entity.Customer = await _customerService.GetById(account.Customer.DocumentNumber);
+                entity.Bank = await _bankService.GetByCode(account.Bank.Code);
+                entity = await _accountService.Create(entity);
+                return StatusCode(201, entity);
 
             }
             catch (Exception ex)
@@ -96,27 +98,17 @@ namespace BankRestAPI.Controllers
                 _logger.LogError("AccountCurrrency is null or empty");
                 return true;
             }
-            if (string.IsNullOrEmpty(account.CustomerDocumentNumber))
+            if (string.IsNullOrEmpty(account.Customer.DocumentNumber))
             {
                 _logger.LogError("AccountCustomerDocumentNumber is null or empty");
                 return true;
             }
-            if (account.BankId == Guid.Empty)
-            {
-                _logger.LogError("AccountBankId is empty");
-                return true;
-            }
-
+            
             return false;
         }
 
         private bool AccountExists(Account account)
         {
-            if (_dbContext.Account.Any(a => a.CustomerDocumentNumber == account.CustomerDocumentNumber))
-            {
-                _logger.LogError($"Account with CustomerDocumentNumber {account.CustomerDocumentNumber} already exists");
-                return true;
-            }
             if (_dbContext.Account.Any(a => a.Number == account.Number))
             {
                 _logger.LogError($"Account with Number {account.Number} already exists");
@@ -127,20 +119,21 @@ namespace BankRestAPI.Controllers
 
         private bool ValidateBankAndCustomer(Account account)
         {
-            var bank = _bankService.GetById(account.BankId);
-            var customer = _customerService.GetById(account.CustomerDocumentNumber);
-            if (bank == null)
+            var bank = _bankService.GetByCode(account.Bank.Code);
+            var customer = _customerService.GetById(account.Customer.DocumentNumber);
+            if (bank.Result == null)
             {
-                _logger.LogError($"Bank with id {account.BankId} does not exist");
+                _logger.LogError($"Bank with code {account.Bank.Code} does not exist");
                 return false;
             }
-            if (customer == null)
+            if (customer.Result == null)
             {
-                _logger.LogError($"Customer with Document Number {account.CustomerDocumentNumber} does not exist");
+                _logger.LogError($"Customer with Document Number {account.Customer.DocumentNumber} does not exist");
                 return false;
             }
             return true;
         }
-
+        
+       
     }
 }

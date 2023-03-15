@@ -31,13 +31,21 @@ namespace BankRestAPI.Services
 
         public async Task<IEnumerable<Account>> GetAll()
         {
-            return await _dbContext.Account.ToListAsync();
+            //return await _dbContext.Account.ToListAsync();
+
+            return await _dbContext.Account
+              .Include(a => a.Customer)
+              .Include(a => a.Bank)
+              .ToListAsync();
         }
 
-        public async Task<Account> GetById(Guid id)
+        public async Task<Account?> GetById(Guid id)
         {
-            var account = await _dbContext.Account.FindAsync(id);
-            return account ?? null;
+            return await _dbContext.Account
+                .Include(a => a.Customer)
+                .Include(a => a.Bank)
+                .FirstOrDefaultAsync(a => a.Id == id);
+
         }
 
         public async Task<Account> Update(Account entity)

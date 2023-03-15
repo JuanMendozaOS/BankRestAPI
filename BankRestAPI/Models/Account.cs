@@ -5,21 +5,16 @@ namespace BankRestAPI.Models
 {
     public class Account
     {
-        [JsonIgnore]
         public Guid Id { get; set; } = default!;
-        public long? Number { get; set; } = default!;
-        public string Currency { get; set; } = default!;
+        public long Number { get; set; } = default!;
+        public string Currency { get; set; } = string.Empty;
         public decimal Balance { get; set; } = default!;
 
         //Navigation property to Customer
-        public string CustomerDocumentNumber { get; set; } = default!;
-        [JsonIgnore]
-        public Customer? Customer { get; set; }
+        public Customer? Customer { get; set; } = default!;
 
         // Navigation properties to Bank
-        public Guid BankId { get; set; } = default!;
-        [JsonIgnore]
-        public Bank? Bank { get; set; }
+        public Bank? Bank { get; set; } = default!;
 
     }
 }

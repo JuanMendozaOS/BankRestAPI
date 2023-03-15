@@ -1,7 +1,6 @@
 ﻿using BankRestAPI.Data;
 using BankRestAPI.Models;
 using Microsoft.EntityFrameworkCore;
-using System.ComponentModel.DataAnnotations;
 
 namespace BankRestAPI.Services
 {
@@ -34,17 +33,34 @@ namespace BankRestAPI.Services
             return await _dbContext.Bank.ToListAsync();
         }
 
-        public async Task<Bank> GetById(Guid id)
+        public async Task<Bank?> GetById(Guid id)
         {
-            var bank = await _dbContext.Bank.FindAsync(id);
-            return bank ?? null;
+            return await _dbContext.Bank.FindAsync(id);
         }
 
         public async Task<Bank> Update(Bank entity)
         {
+
             _dbContext.Bank.Update(entity);
             await _dbContext.SaveChangesAsync();
             return entity;
+        }
+
+        public async Task<Bank?> GetByCode(string code)
+        {
+            var bank = await _dbContext.Bank.FirstOrDefaultAsync(b => b.Code == code);
+            return bank;
+        }
+
+        public async Task<Bank?> GetByName(string name)
+        {
+            var bank = await _dbContext.Bank.FirstOrDefaultAsync(b => b.Name == name);
+            return bank;
+        }
+
+        public async Task<Bank?> GetByAddress(string address)
+        {
+            return await _dbContext.Bank.FirstOrDefaultAsync(b => b.Address == address);
         }
     }
 }

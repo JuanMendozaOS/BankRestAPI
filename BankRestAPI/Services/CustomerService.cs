@@ -32,10 +32,9 @@ namespace BankRestAPI.Services
             return await _dbContext.Customer.ToListAsync();
         }
 
-        public async Task<Customer> GetById(string DocumentNumber)
+        public async Task<Customer?> GetById(string DocumentNumber)
         {
-            var customer =  await _dbContext.Customer.FindAsync(DocumentNumber);
-            return customer ?? null;
+            return await _dbContext.Customer.FindAsync(DocumentNumber);
         }
         
 
