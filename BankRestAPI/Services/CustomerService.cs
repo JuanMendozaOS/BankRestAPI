@@ -36,7 +36,7 @@ namespace BankRestAPI.Services
         {
             return await _dbContext.Customer.FindAsync(DocumentNumber);
         }
-        
+
 
         public async Task<Customer> Update(Customer entity)
         {

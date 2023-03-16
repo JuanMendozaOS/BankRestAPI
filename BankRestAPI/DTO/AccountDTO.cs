@@ -1,6 +1,4 @@
-﻿using BankRestAPI.Models;
-
-namespace BankRestAPI.DTO
+﻿namespace BankRestAPI.DTO
 {
     public class AccountDTO
     {

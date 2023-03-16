@@ -3,7 +3,6 @@ using BankRestAPI.DTO;
 using BankRestAPI.Models;
 using BankRestAPI.Services;
 using Microsoft.AspNetCore.Mvc;
-using System.Runtime.InteropServices;
 
 namespace BankRestAPI.Controllers
 {
@@ -59,17 +58,18 @@ namespace BankRestAPI.Controllers
                 }
 
                 var transfers = await _accountService.GetTransfersByAccountNumber(number, sent, received);
-               
+
                 return Ok(transfers);
 
-            } catch (Exception ex)
+            }
+            catch (Exception ex)
             {
                 return StatusCode(500, ex.Message);
             }
-            
+
         }
 
- 
+
         [HttpPost]
         public async Task<IActionResult> AddAccount(AccountDTO account)
         {

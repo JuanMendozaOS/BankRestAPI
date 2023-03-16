@@ -1,6 +1,4 @@
-﻿using System.Text.Json.Serialization;
-
-namespace BankRestAPI.Models
+﻿namespace BankRestAPI.Models
 {
     public class Transfer
     {

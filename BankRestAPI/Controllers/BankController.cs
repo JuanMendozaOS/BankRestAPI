@@ -47,9 +47,9 @@ namespace BankRestAPI.Controllers
         {
             try
             {
-                if (ContainsNullOrEmpty(bankDTO) || await BankExists(bankDTO) ) 
-                { 
-                    return BadRequest(); 
+                if (ContainsNullOrEmpty(bankDTO) || await BankExists(bankDTO))
+                {
+                    return BadRequest();
                 }
 
                 return StatusCode(201, await Create(bankDTO));
@@ -102,8 +102,9 @@ namespace BankRestAPI.Controllers
 
         private async Task Update(Bank entity, BankDTO bank)
         {
-            if(!string.IsNullOrEmpty(bank.Code)) {
-               entity.Code = bank.Code;
+            if (!string.IsNullOrEmpty(bank.Code))
+            {
+                entity.Code = bank.Code;
             }
             if (!string.IsNullOrEmpty(bank.Name))
             {

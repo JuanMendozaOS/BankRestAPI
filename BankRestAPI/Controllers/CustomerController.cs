@@ -55,7 +55,7 @@ namespace BankRestAPI.Controllers
                 }
 
                 var transfers = await _customerService.GetTransfersByDocumentNumber(documentNumber, sent, received);
-               
+
                 return Ok(transfers);
 
             }

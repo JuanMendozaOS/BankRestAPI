@@ -1,5 +1,4 @@
 using BankRestAPI.Data;
-using BankRestAPI.Models;
 using BankRestAPI.Services;
 using Microsoft.EntityFrameworkCore;
 
@@ -11,7 +10,7 @@ builder.Services.AddControllers();
 //builder.Services.AddControllers(
 //    options => options.SuppressImplicitRequiredAttributeForNonNullableReferenceTypes = true);
 // Add database context
-builder.Services.AddDbContext<BankDbContext>(options => 
+builder.Services.AddDbContext<BankDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("BankAPIConnectionString"))
 );
 
