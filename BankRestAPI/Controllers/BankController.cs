@@ -47,17 +47,12 @@ namespace BankRestAPI.Controllers
         {
             try
             {
-                Bank bank = new Bank();
                 if (ContainsNullOrEmpty(bankDTO) || await BankExists(bankDTO) ) 
                 { 
                     return BadRequest(); 
                 }
 
-                bank.Code = bankDTO.Code;
-                bank.Name = bankDTO.Name;
-                bank.Address = bankDTO.Address;
-
-                return StatusCode(201, await _bankService.Create(bank));
+                return StatusCode(201, await Create(bankDTO));
 
             }
             catch (Exception ex)
@@ -65,6 +60,7 @@ namespace BankRestAPI.Controllers
                 return StatusCode(500, ex.Message);
             }
         }
+
 
         [HttpPut]
         [Route("{code}")]
@@ -89,6 +85,7 @@ namespace BankRestAPI.Controllers
             return Ok(entity);
         }
 
+
         [HttpDelete("{code}")]
         public async Task<IActionResult> DeleteBank(string code)
         {
@@ -100,6 +97,8 @@ namespace BankRestAPI.Controllers
 
             return Ok(await _bankService.GetAll());
         }
+
+
 
         private async Task Update(Bank entity, BankDTO bank)
         {
@@ -167,6 +166,17 @@ namespace BankRestAPI.Controllers
             }
             return false;
         }
+
+        private async Task<Bank> Create(BankDTO bankDTO)
+        {
+            Bank bank = new Bank();
+            bank.Code = bankDTO.Code;
+            bank.Name = bankDTO.Name;
+            bank.Address = bankDTO.Address;
+            await _bankService.Create(bank);
+            return bank;
+        }
+
 
     }
 }

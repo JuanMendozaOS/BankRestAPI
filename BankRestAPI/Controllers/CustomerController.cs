@@ -27,6 +27,7 @@ namespace BankRestAPI.Controllers
             return Ok(await _customerService.GetAll());
         }
 
+
         [HttpGet("{documentNumber}")]
         public async Task<IActionResult> GetCustomer(string documentNumber)
         {
@@ -39,6 +40,32 @@ namespace BankRestAPI.Controllers
 
             return Ok(customer);
         }
+
+
+        [HttpGet("{documentNumber}/transfers")]
+        public async Task<IActionResult> GetTransfersByAccountNumber(string documentNumber, bool sent, bool received)
+        {
+            try
+            {
+                var validationResult = await ValidateCustomerTransfers(documentNumber, sent, received);
+
+                if (!validationResult.IsValid)
+                {
+                    return BadRequest(validationResult.ErrorMessage);
+                }
+
+                var transfers = await _customerService.GetTransfersByDocumentNumber(documentNumber, sent, received);
+               
+                return Ok(transfers);
+
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
+
+        }
+
 
         [HttpPost]
         public async Task<IActionResult> AddCustomer(Customer customer)
@@ -62,6 +89,7 @@ namespace BankRestAPI.Controllers
             }
 
         }
+
 
         [HttpPut("{documentNumber}")]
         public async Task<IActionResult> UpdateCustomer(string documentNumber, Customer customer)
@@ -89,6 +117,45 @@ namespace BankRestAPI.Controllers
             await _customerService.Delete(documentNumber);
 
             return Ok(await _customerService.GetAll());
+        }
+
+
+        private async Task<ValidationResult> ValidateCustomerTransfers(string documentNumber, bool sent, bool received)
+        {
+            var validationResult = new ValidationResult();
+
+            validationResult.ErrorMessage = HasNullOrEmpty(documentNumber, sent, received);
+
+            if (validationResult.ErrorMessage != "OK")
+            {
+                return validationResult;
+            }
+
+            var customer = await _customerService.GetById(documentNumber);
+
+            if (customer == null)
+            {
+                validationResult.ErrorMessage = $"La cuenta Nro. {documentNumber} no existe.";
+                return validationResult;
+            }
+
+            validationResult.Customer = customer;
+            validationResult.IsValid = true;
+            return validationResult;
+        }
+
+        private string HasNullOrEmpty(string documentNumber, bool sent, bool received)
+        {
+            if (string.IsNullOrEmpty(documentNumber))
+            {
+                return "El número de cuenta no puede estar vacío.";
+            }
+            if (!sent && !received)
+            {
+                return "Debe seleccionar al menos un tipo de transferencia (enviadas o recibidas).";
+            }
+
+            return "OK";
         }
 
         private async void Update(Customer entity, Customer customer)

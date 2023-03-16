@@ -4,7 +4,6 @@ namespace BankRestAPI.Models
 {
     public class Transfer
     {
-        [JsonIgnore]
         public Guid Id { get; set; }
 
         //datos de origen

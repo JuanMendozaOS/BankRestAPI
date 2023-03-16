@@ -29,12 +29,26 @@ namespace BankRestAPI.Services
 
         public async Task<IEnumerable<Transfer>> GetAll()
         {
-            return await _dbContext.Transfer.ToListAsync();
+            return await _dbContext.Transfer
+                .Include(t => t.FromBank)
+                .Include(t => t.FromAccount)
+                .Include(t => t.FromCustomer)
+                .Include(t => t.ToBank)
+                .Include(t => t.ToAccount)
+                .Include(t => t.ToCustomer)
+                .ToListAsync();
         }
 
         public async Task<Transfer?> GetById(Guid id)
         {
-            return await _dbContext.Transfer.FindAsync(id);
+            return await _dbContext.Transfer
+                .Include(t => t.FromBank)
+                .Include(t => t.FromAccount)
+                .Include(t => t.FromCustomer)
+                .Include(t => t.ToBank)
+                .Include(t => t.ToAccount)
+                .Include(t => t.ToCustomer)
+                .FirstOrDefaultAsync(t => t.Id == id);
         }
 
         public async Task<Transfer> Update(Transfer entity)

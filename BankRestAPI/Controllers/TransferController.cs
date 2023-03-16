@@ -1,4 +1,5 @@
 ﻿using BankRestAPI.Data;
+using BankRestAPI.DTO;
 using BankRestAPI.Models;
 using BankRestAPI.Services;
 using Microsoft.AspNetCore.Mvc;
@@ -33,79 +34,226 @@ namespace BankRestAPI.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> Send(Transfer transfer)
+        public async Task<IActionResult> CreateTransfer(TransferDTO transfer)
         {
-            try
+
+            // validation methods
+            var validationResult = await ValidateTransferAsync(transfer);
+
+            if (!validationResult.IsValid)
             {
-                if (ContainsNullOrEmpty(transfer))
-                {
-                    return BadRequest();
-                }
-                transfer.TransactionState = "EN PROCESO";
-
-                var fromBank = await _bankService.GetByCode(transfer.FromBank.Code);
-                var toBank = await _bankService.GetByCode(transfer.ToBank.Code);
-                var fromAccount = await _accountService.GetById(transfer.FromAccount.Id);
-                var toAccount = await _accountService.GetById(transfer.ToAccount.Id);
-                var fromCustomer = await _customerService.GetById(transfer.FromCustomer.DocumentNumber);
-                var toCustomer = await _customerService.GetById(transfer.FromCustomer.DocumentNumber);
-
-                if (fromBank == null || toBank == null)
-                {
-                    _logger.LogError("Al menos uno de los bancos no existe");
-                    return BadRequest();
-                }
-
-                if (fromBank == toBank)
-                {
-                    throw new Exception("Bancos NO deben ser Iguales");
-                }
-
-                if (fromAccount == null || toAccount == null)
-                {
-                    _logger.LogError("Al menos una de las cuentas no existe");
-                    return BadRequest();
-                }
-
-                if (!validateTransferAmount(transfer, fromAccount))
-                {
-                    throw new Exception($"Insuficiencia de fondos: {fromAccount.Balance}");
-                }
-
-                if(!validateCustomers(fromCustomer, toCustomer))
-                {
-                    return NotFound("Al menos uno de los clientes no existe");
-                }
-
-                fromAccount.Balance = fromAccount.Balance - transfer.Amount;
-                toAccount.Balance = toAccount.Balance + transfer.Amount;
-
-                await _accountService.Update(fromAccount);
-                await _accountService.Update(toAccount);
-
-                transfer.FromBank = fromBank;
-                transfer.ToBank = toBank;   
-                transfer.FromAccount = fromAccount;
-                transfer.ToAccount = toAccount;
-                transfer.FromCustomer = fromCustomer;
-                transfer.ToCustomer = toCustomer;
-                transfer.OperationDate = DateTime.Now.ToUniversalTime();
-                transfer.TransactionState = "FINALIZADO";
-
-                await _transferService.Create(transfer);
-                return StatusCode(201, transfer);
-
+                return BadRequest(validationResult.ErrorMessage);
             }
-            catch (Exception ex)
+
+            await UpdateBalance(transfer, validationResult.FromAccount, validationResult.ToAccount);
+
+            return StatusCode(201, await Create(transfer));
+        }
+
+
+        [HttpPut("TransactionState/{id:guid}")]
+        public async Task<IActionResult> UpdateTransactionState(Guid id, string transactionState)
+        {
+            var transfer = await _transferService.GetById(id);
+            if (transfer == null)
             {
-                return StatusCode(400, ex.Message);
+                return NotFound("");
             }
-            
+            transfer.TransactionState = transactionState;
+            await _transferService.Update(transfer);
+            return Ok(transfer);
+        }
+
+
+        [HttpGet("TransactionState/{id:guid}")]
+        public async Task<IActionResult> GetTransactionState(Guid id)
+        {
+            var transfer = await _transferService.GetById(id);
+            if (transfer == null)
+            {
+                return NotFound();
+            }
+            return Ok(transfer.TransactionState);
+        }
+
+
+        private async Task<ValidationResult> ValidateTransferAsync(TransferDTO transfer)
+        {
+
+            var validationResult = new ValidationResult();
+
+            validationResult.ErrorMessage = ContainsNullOrEmpty(transfer);
+            if (validationResult.ErrorMessage != "OK")
+            {
+                return validationResult;
+            }
+
+            var fromBank = await _bankService.GetByCode(transfer.FromBankCode);
+            var toBank = await _bankService.GetByCode(transfer.ToBankCode);
+            var fromAccount = await _accountService.GetByNumber(transfer.FromAccountNumber);
+            var toAccount = await _accountService.GetByNumber(transfer.ToAccountNumber);
+            var fromCustomer = await _customerService.GetById(transfer.FromCustomerDocNumber);
+            var toCustomer = await _customerService.GetById(transfer.ToCustomerDocNumber);
+
+            validationResult.ErrorMessage = validateBanks(fromBank, toBank);
+            if (validationResult.ErrorMessage != "OK")
+            {
+                return validationResult;
+            }
+
+            if (fromAccount == null || toAccount == null)
+            {
+                validationResult.ErrorMessage = "Al menos una de las cuentas no existe";
+                return validationResult;
+            }
+
+            if (!validateTransferAmount(transfer, fromAccount))
+            {
+                throw new Exception($"Insuficiencia de fondos: {fromAccount.Balance}");
+            }
+
+            if (!validateCustomers(fromCustomer, toCustomer))
+            {
+                validationResult.ErrorMessage = "Al menos uno de los clientes no existe";
+                return validationResult;
+            }
+
+            // Que el account sea del banco
+            if (fromAccount.Bank.Code != fromBank.Code)
+            {
+                validationResult.ErrorMessage = $"La cuenta Nro. {fromAccount.Number} no se encuentra registrada en el ban nro. {fromBank.Name}";
+                return validationResult;
+            }
+            if (toAccount.Bank.Code != toBank.Code)
+            {
+                validationResult.ErrorMessage = $"La cuenta de origen Nro. {toAccount.Number} no se encuentra registrada en el banco de origen {toBank.Name}";
+                return validationResult;
+            }
+
+            // Que el account pertenezca al customer 
+            if (fromAccount.Customer.DocumentNumber != fromCustomer.DocumentNumber)
+            {
+                validationResult.ErrorMessage = $"La cuenta Nro. {fromAccount.Number} no corresponde al cliente con Document {fromCustomer.DocumentNumber}";
+                return validationResult;
+            }
+            if (toAccount.Customer.DocumentNumber != toCustomer.DocumentNumber)
+            {
+                validationResult.ErrorMessage = $"La cuenta Nro. {toAccount.Number} no corresponde al cliente con Document {toCustomer.DocumentNumber}";
+                return validationResult;
+            }
+
+            validationResult.FromAccount = fromAccount;
+            validationResult.ToAccount = toAccount;
+            validationResult.IsValid = true;
+            return validationResult;
+        }
+
+        private string validateBanks(Bank? fromBank, Bank? toBank)
+        {
+            if (fromBank == null || toBank == null)
+            {
+                return "Al menos uno de los bancos no existe";
+            }
+
+            if (fromBank == toBank)
+            {
+                throw new Exception("Bancos NO deben ser Iguales");
+            }
+
+
+            return "OK";
+        }
+
+        private async Task UpdateBalance(TransferDTO transfer, Account fromAccount, Account toAccount)
+        {
+            fromAccount.Balance = fromAccount.Balance - transfer.Amount;
+            toAccount.Balance = toAccount.Balance + transfer.Amount;
+
+            await _accountService.Update(fromAccount);
+            await _accountService.Update(toAccount);
+        }
+
+        private string ContainsNullOrEmpty(TransferDTO transfer)
+        {
+            string msg;
+
+            if (transfer == null)
+            {
+                msg = "Transfer object is null";
+                _logger.LogError(msg);
+                return msg;
+            }
+
+            if (string.IsNullOrEmpty(transfer.Currency))
+            {
+                msg = "Currency es null o empty";
+                _logger.LogError(msg);
+                return msg;
+            }
+
+
+            // origin data 
+            if (string.IsNullOrEmpty(transfer.FromBankName))
+            {
+                msg = "Origin Bank Name es null o empty";
+                _logger.LogError(msg);
+                return msg;
+            }
+
+            if (string.IsNullOrEmpty(transfer.FromBankCode))
+            {
+                msg = "Origin Bank Code es null o empty";
+                _logger.LogError(msg);
+                return msg;
+            }
+            if (string.IsNullOrEmpty(transfer.FromCustomerDocNumber))
+            {
+                msg = "Origin Document Number es null o empty";
+                _logger.LogError(msg);
+                return msg;
+            }
+
+            if (string.IsNullOrEmpty(transfer.FromAccountNumber))
+            {
+                msg = "Origin Account Number es null o empty";
+                _logger.LogError(msg);
+                return msg;
+            }
+
+
+            // receiver data
+            if (string.IsNullOrEmpty(transfer.ToBankName))
+            {
+                msg = "Receiver Bank Name es null or empty";
+                _logger.LogError(msg);
+                return msg;
+            }
+
+            if (string.IsNullOrEmpty(transfer.ToBankCode))
+            {
+                msg = "Receiver Bank Code es null or empty";
+                _logger.LogError(msg);
+                return msg;
+            }
+            if (string.IsNullOrEmpty(transfer.ToCustomerDocNumber))
+            {
+                msg = "Receiver Document Number es null or empty";
+                _logger.LogError(msg);
+                return msg;
+            }
+
+            if (string.IsNullOrEmpty(transfer.ToAccountNumber))
+            {
+                msg = "Receiver Account Number es null or empty";
+                _logger.LogError(msg);
+                return msg;
+            }
+            return "OK";
         }
 
         private bool validateCustomers(Customer? fromCustomer, Customer? toCustomer)
         {
-            if(fromCustomer == null || toCustomer == null)
+            if (fromCustomer == null || toCustomer == null)
             {
                 _logger.LogError("Al menos uno de los clientes no existe");
                 return false;
@@ -113,16 +261,16 @@ namespace BankRestAPI.Controllers
             return true;
         }
 
-        private bool validateTransferAmount(Transfer transfer, Account fromAccount)
+        private bool validateTransferAmount(TransferDTO transfer, Account fromAccount)
         {
             var amount = transfer.Amount;
 
-            if (amount < 0) 
+            if (amount < 0)
             {
-                _logger.LogError($"Monto de transferencia menor a 0: ${amount}"); 
+                _logger.LogError($"Monto de transferencia menor a 0: ${amount}");
                 throw new Exception($"Monto inválido: {amount}");
             }
-            if(amount > fromAccount.Balance)
+            if (amount > fromAccount.Balance)
             {
                 _logger.LogError($"Monto de transferencia es mayor al balance de cuenta: {transfer.Currency} {amount}");
                 return false;
@@ -131,101 +279,35 @@ namespace BankRestAPI.Controllers
             return true;
         }
 
-        [HttpPut("TransactionState/{id:guid}")]
-        public async Task<IActionResult> UpdateTransactionState(Guid id, string transactionState)
+        private async Task<Transfer> Create(TransferDTO transfer)
         {
-            throw new NotImplementedException();
+            Transfer entity = new Transfer();
+            entity.FromBankName = transfer.FromBankName;
+            entity.ToBankName = transfer.ToBankName;
+            entity.FromBank = await _bankService.GetByCode(transfer.FromBankCode);
+            entity.ToBank = await _bankService.GetByCode(transfer.ToBankCode);
+            entity.FromAccount = await _accountService.GetByNumber(transfer.FromAccountNumber);
+            entity.ToAccount = await _accountService.GetByNumber(transfer.ToAccountNumber);
+            entity.FromCustomer = await _customerService.GetById(transfer.FromCustomerDocNumber);
+            entity.ToCustomer = await _customerService.GetById(transfer.ToCustomerDocNumber); ;
+            entity.OperationDate = DateTime.Now.ToUniversalTime();
+            entity.Currency = transfer.Currency;
+            entity.TransactionState = "FINALIZADO";
+            entity.Amount = transfer.Amount;
+
+            await _transferService.Create(entity);
+            return entity;
         }
+    }
 
-        [HttpGet("TransactionState/{id:guid}")]
-        public async Task<IActionResult> GetTransactionState(Guid id)
-        {
-            throw new NotImplementedException();
-        }
 
-        private bool ContainsNullOrEmpty(Transfer transfer)
-        {
-            if (transfer == null)
-            {
-                _logger.LogError("Transfer object is null");
-                return true;
-            }
-
-            if (string.IsNullOrEmpty(transfer.Currency))
-            {
-                _logger.LogError("Currency es null o empty");
-                return true;
-            }
-
-            // origin data 
-            if (string.IsNullOrEmpty(transfer.FromBankName))
-            {
-                _logger.LogError("Origin Bank Name es null o empty");
-                return true;
-            }
-            if (transfer.FromBank == null)
-            {
-                _logger.LogError("Origin Bank object es null");
-                return true;
-            }
-            if (string.IsNullOrEmpty(transfer.FromBank.Code))
-            {
-                _logger.LogError("Origin Bank Code es null o empty");
-                return true;
-            }
-            if (string.IsNullOrEmpty(transfer.FromCustomer.DocumentNumber))
-            {
-                _logger.LogError("Origin Document Number es null o empty");
-                return true;
-            }
-            if (transfer.FromAccount == null)
-            {
-                _logger.LogError("Origin Account es null o empty");
-                return true;
-            }
-            if (transfer.FromAccount.Id == Guid.Empty)
-            {
-                _logger.LogError("Origin Account Id es null o empty");
-                return true;
-            }
-
-            // receiver data
-
-            if (string.IsNullOrEmpty(transfer.ToBankName))
-            {
-                _logger.LogError("Receiver Bank Name es null or empty");
-                return true;
-            }
-            if (transfer.ToBank == null)
-            {
-                _logger.LogError("Receiver Bank object es null");
-                return true;
-            }
-
-            if (string.IsNullOrEmpty(transfer.ToBank.Code))
-            {
-                _logger.LogError("Receiver Bank Code es null or empty");
-                return true;
-            }
-            if (string.IsNullOrEmpty(transfer.ToCustomer.DocumentNumber))
-            {
-                _logger.LogError("Receiver Document Number es null or empty");
-                return true;
-            }
-            if (transfer.ToAccount == null)
-            {
-                _logger.LogError("Receiver Account es null or empty");
-
-                return true;
-            }
-            if (transfer.ToAccount.Id == Guid.Empty)
-            {
-                _logger.LogError("Receiver Account Id es null or empty");
-                return true;
-            }
-
-            return false;
-        }
-
+    public class ValidationResult
+    {
+        public bool IsValid { get; set; }
+        public string ErrorMessage { get; set; }
+        public Account? FromAccount { get; set; }
+        public Account? ToAccount { get; set; }
+        public Account? Account { get; set; }
+        public Customer? Customer { get; set; }
     }
 }

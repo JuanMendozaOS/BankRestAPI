@@ -6,7 +6,7 @@ namespace BankRestAPI.Models
     public class Account
     {
         public Guid Id { get; set; } = default!;
-        public long Number { get; set; } = default!;
+        public string Number { get; set; } = string.Empty;
         public string Currency { get; set; } = string.Empty;
         public decimal Balance { get; set; } = default!;
 

@@ -1,8 +1,9 @@
 ﻿using BankRestAPI.Data;
+using BankRestAPI.DTO;
 using BankRestAPI.Models;
 using BankRestAPI.Services;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+using System.Runtime.InteropServices;
 
 namespace BankRestAPI.Controllers
 {
@@ -30,11 +31,12 @@ namespace BankRestAPI.Controllers
         {
             return Ok(await _accountService.GetAll());
         }
-        
-        [HttpGet("{id:guid}")]
-        public async Task<IActionResult> GetAccount(Guid id)
+
+
+        [HttpGet("{number}")]
+        public async Task<IActionResult> GetAccount(string number)
         {
-            var account = await _accountService.GetById(id);
+            var account = await _accountService.GetByNumber(number);
 
             if (account == null)
             {
@@ -44,11 +46,36 @@ namespace BankRestAPI.Controllers
         }
 
 
-        [HttpPost]
-        public async Task<IActionResult> AddAccount(Account account)
+        [HttpGet("{number}/transfers")]
+        public async Task<IActionResult> GetTransfersByAccountNumber(string number, bool sent, bool received)
         {
             try
             {
+                var validationResult = await ValidateAccountTransfers(number, sent, received);
+
+                if (!validationResult.IsValid)
+                {
+                    return BadRequest(validationResult.ErrorMessage);
+                }
+
+                var transfers = await _accountService.GetTransfersByAccountNumber(number, sent, received);
+               
+                return Ok(transfers);
+
+            } catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
+            
+        }
+
+ 
+        [HttpPost]
+        public async Task<IActionResult> AddAccount(AccountDTO account)
+        {
+            try
+            {
+
                 if (ContainsNullOrEmpty(account) || AccountExists(account) || !ValidateBankAndCustomer(account))
                 {
                     return BadRequest();
@@ -58,12 +85,8 @@ namespace BankRestAPI.Controllers
                 {
                     return BadRequest("El saldo de la cuenta no puede ser negativo");
                 }
-                Account entity = account;
 
-                entity.Customer = await _customerService.GetById(account.Customer.DocumentNumber);
-                entity.Bank = await _bankService.GetByCode(account.Bank.Code);
-                entity = await _accountService.Create(entity);
-                return StatusCode(201, entity);
+                return StatusCode(201, await Create(account));
 
             }
             catch (Exception ex)
@@ -72,21 +95,21 @@ namespace BankRestAPI.Controllers
             }
         }
 
-   
 
-        [HttpDelete("{id:guid}")]
-        public async Task<IActionResult> DeleteAccount(Guid id)
+        [HttpDelete("{number}")]
+        public async Task<IActionResult> DeleteAccount(string number)
         {
-            var account = await _accountService.GetById(id);
+            var account = await _accountService.GetByNumber(number);
 
-            if (account == null) { return NotFound($"Account with id {id} not found"); }
+            if (account == null) { return NotFound($"Account with id {number} not found"); }
 
-            await _accountService.Delete(id);
+            await _accountService.Delete(account.Id);
 
             return Ok(await _accountService.GetAll());
         }
 
-        private bool ContainsNullOrEmpty(Account account)
+
+        private bool ContainsNullOrEmpty(AccountDTO account)
         {
             if (account == null)
             {
@@ -98,16 +121,16 @@ namespace BankRestAPI.Controllers
                 _logger.LogError("AccountCurrrency is null or empty");
                 return true;
             }
-            if (string.IsNullOrEmpty(account.Customer.DocumentNumber))
+            if (string.IsNullOrEmpty(account.CustomerDocumentNumber))
             {
                 _logger.LogError("AccountCustomerDocumentNumber is null or empty");
                 return true;
             }
-            
+
             return false;
         }
 
-        private bool AccountExists(Account account)
+        private bool AccountExists(AccountDTO account)
         {
             if (_dbContext.Account.Any(a => a.Number == account.Number))
             {
@@ -117,23 +140,77 @@ namespace BankRestAPI.Controllers
             return false;
         }
 
-        private bool ValidateBankAndCustomer(Account account)
+        private bool ValidateBankAndCustomer(AccountDTO account)
         {
-            var bank = _bankService.GetByCode(account.Bank.Code);
-            var customer = _customerService.GetById(account.Customer.DocumentNumber);
+            var bank = _bankService.GetByCode(account.BankCode);
+            var customer = _customerService.GetById(account.CustomerDocumentNumber);
             if (bank.Result == null)
             {
-                _logger.LogError($"Bank with code {account.Bank.Code} does not exist");
+                _logger.LogError($"Bank with code {account.BankCode} does not exist.");
                 return false;
             }
             if (customer.Result == null)
             {
-                _logger.LogError($"Customer with Document Number {account.Customer.DocumentNumber} does not exist");
+                _logger.LogError($"Customer with Document Number {account.CustomerDocumentNumber} does not exist.");
                 return false;
             }
             return true;
         }
-        
-       
+
+        private async Task<ValidationResult> ValidateAccountTransfers(string accountNumber, bool sent, bool received)
+        {
+            var validationResult = new ValidationResult();
+
+            validationResult.ErrorMessage = HasNullOrEmpty(accountNumber, sent, received);
+
+            if (validationResult.ErrorMessage != "OK")
+            {
+                return validationResult;
+            }
+
+            var account = await _accountService.GetByNumber(accountNumber);
+
+            if (account == null)
+            {
+                validationResult.ErrorMessage = $"La cuenta Nro. {accountNumber} no existe.";
+                return validationResult;
+            }
+
+            validationResult.Account = account;
+            validationResult.IsValid = true;
+            return validationResult;
+        }
+
+        private string HasNullOrEmpty(string accountNumber, bool sent, bool received)
+        {
+            if (string.IsNullOrEmpty(accountNumber))
+            {
+                return "El número de cuenta no puede estar vacío.";
+            }
+            if (!sent && !received)
+            {
+                return "Debe seleccionar al menos un tipo de transferencia (enviadas o recibidas).";
+            }
+
+            return "OK";
+        }
+
+
+        private async Task<Account> Create(AccountDTO account)
+        {
+            Account entity = new Account();
+            entity.Number = account.Number;
+            entity.Balance = account.Balance;
+            entity.Currency = account.Currency;
+            entity.Customer = await _customerService.GetById(account.CustomerDocumentNumber);
+            entity.Bank = await _bankService.GetByCode(account.BankCode);
+            entity = await _accountService.Create(entity);
+            return entity;
+        }
+
+
+
     }
+
+
 }

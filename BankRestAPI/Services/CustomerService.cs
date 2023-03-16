@@ -44,5 +44,34 @@ namespace BankRestAPI.Services
             await _dbContext.SaveChangesAsync();
             return entity;
         }
+
+        public async Task<IEnumerable<Transfer>> GetTransfersByDocumentNumber(string documentNumber, bool sent, bool received)
+        {
+
+            if (sent && received)
+            {
+                var transfers = await _dbContext.Transfer
+                    .Where(t => t.FromCustomer.DocumentNumber == documentNumber || t.ToCustomer.DocumentNumber == documentNumber)
+                    .ToListAsync();
+                return transfers;
+            }
+
+            else if (sent)
+            {
+                var transfers = await _dbContext.Transfer
+                        .Where(t => t.FromCustomer.DocumentNumber == documentNumber)
+                        .ToListAsync();
+                return transfers;
+            }
+            else
+            {
+                var transfers = await _dbContext.Transfer
+                    .Where(t => t.ToCustomer.DocumentNumber == documentNumber)
+                    .ToListAsync();
+
+                return transfers;
+            }
+
+        }
     }
 }
