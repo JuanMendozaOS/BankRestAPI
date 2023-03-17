@@ -47,6 +47,13 @@ La API tiene la capacidad de recibir solicitudes HTTP con datos de entidades y g
 │   └───Utilities
 
 ```
+## Screenshots
+<img src="https://github.com/JuanMendozaOS/BankRestAPI/blob/main/Screenshots/CreateAccount.png" width="512">
+
+<img src="https://github.com/JuanMendozaOS/BankRestAPI/blob/main/Screenshots/CreateTransfer.png" width="512">
+
+<img src="https://github.com/JuanMendozaOS/BankRestAPI/blob/main/Screenshots/GetAccountByNumber.png" width="512">
+
 
 ## Autores
 
