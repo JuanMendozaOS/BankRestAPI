@@ -45,12 +45,7 @@ La API tiene la capacidad de recibir solicitudes HTTP con datos de entidades y g
 │   ├───Models
 │   ├───Services
 │   └───Utilities
-└───BankRestAPI.Tests
-    ├───Controllers
-    ├───DTOs
-    ├───Models
-    ├───Services
-    └───Utilities
+
 ```
 
 ## Autores
