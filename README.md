@@ -33,3 +33,26 @@ La API tiene la capacidad de recibir solicitudes HTTP con datos de entidades y g
 ```
 
 - Visitar https://localhost:[puerto]/swagger/index.html para conocer los endpoints y sus requerimientos para realizar las peticiones.
+
+## Estructura del proyecto
+
+```markdown
+├───BankRestAPI
+│   ├───Controllers
+│   ├───Data
+│   │   └───Migrations
+│   ├───DTOs
+│   ├───Models
+│   ├───Services
+│   └───Utilities
+└───BankRestAPI.Tests
+    ├───Controllers
+    ├───DTOs
+    ├───Models
+    ├───Services
+    └───Utilities
+```
+
+## Autores
+
+- [@JuanMendozaOS](https://www.github.com/JuanMendozaOS)
