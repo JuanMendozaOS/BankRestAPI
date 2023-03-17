@@ -15,6 +15,8 @@ namespace BankRestAPI.Controllers
         private readonly AccountService _accountService;
         private readonly BankService _bankService;
         private readonly CustomerService _customerService;
+        private Bank bankdadsadsad = new Bank();
+        
 
         public AccountController(BankDbContext dbContext, ILogger<AccountController> logger, AccountService accountService, BankService bankService, CustomerService customerService)
         {
@@ -28,6 +30,9 @@ namespace BankRestAPI.Controllers
         [HttpGet]
         public async Task<IActionResult> GetAccounts()
         {
+            
+
+
             return Ok(await _accountService.GetAll());
         }
 
@@ -96,6 +101,24 @@ namespace BankRestAPI.Controllers
         }
 
 
+        [HttpPut("{number}")]
+        public async Task<IActionResult> UpdateAccount(string number, decimal balance)
+        {
+            var account = await _accountService.GetByNumber(number);
+            if(account == null)
+            {
+                return NotFound($"Cuenta Nro. {number} no existe.");
+            }
+            if(balance <= 0)
+            {
+                return BadRequest("El saldo no puede ser menor o igual a 0.");
+            }
+
+            account.Balance = balance;
+            await _accountService.Update(account);
+            return Ok(account);
+        }
+        
         [HttpDelete("{number}")]
         public async Task<IActionResult> DeleteAccount(string number)
         {

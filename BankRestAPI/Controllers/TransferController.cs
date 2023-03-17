@@ -33,6 +33,19 @@ namespace BankRestAPI.Controllers
             return Ok(await _transferService.GetAll());
         }
 
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetTransfer(Guid id)
+        {
+            var transfer = await _transferService.GetById(id);
+
+            if (transfer == null)
+            {
+                return NotFound($"Transfer with id {id} not found");
+            }
+
+            return Ok(transfer);
+        }
+
         [HttpPost]
         public async Task<IActionResult> CreateTransfer(TransferDTO transfer)
         {
@@ -95,7 +108,7 @@ namespace BankRestAPI.Controllers
             var fromCustomer = await _customerService.GetById(transfer.FromCustomerDocNumber);
             var toCustomer = await _customerService.GetById(transfer.ToCustomerDocNumber);
 
-            validationResult.ErrorMessage = validateBanks(fromBank, toBank);
+            validationResult.ErrorMessage = validateBanks(transfer, fromBank, toBank);
             if (validationResult.ErrorMessage != "OK")
             {
                 return validationResult;
@@ -148,7 +161,7 @@ namespace BankRestAPI.Controllers
             return validationResult;
         }
 
-        private string validateBanks(Bank? fromBank, Bank? toBank)
+        private string validateBanks(TransferDTO transfer, Bank? fromBank, Bank? toBank)
         {
             if (fromBank == null || toBank == null)
             {
@@ -158,6 +171,15 @@ namespace BankRestAPI.Controllers
             if (fromBank == toBank)
             {
                 throw new Exception("Bancos NO deben ser Iguales");
+            }
+
+            if (transfer.FromBankName.ToUpper() != fromBank.Name.ToUpper())
+            {
+                return $"Nombre de Banco {transfer.FromBankName} no corresponde al código {fromBank.Code}";
+            }
+            if (transfer.ToBankName.ToUpper() != toBank.Name.ToUpper())
+            {
+                return $"Nombre de Banco {transfer.ToBankName} no corresponde al código {toBank.Code}";
             }
 
 
@@ -265,9 +287,9 @@ namespace BankRestAPI.Controllers
         {
             var amount = transfer.Amount;
 
-            if (amount < 0)
+            if (amount <= 0)
             {
-                _logger.LogError($"Monto de transferencia menor a 0: ${amount}");
+                _logger.LogError($"Monto de transferencia menor o igual a 0: ${amount}");
                 throw new Exception($"Monto inválido: {amount}");
             }
             if (amount > fromAccount.Balance)
