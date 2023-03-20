@@ -40,11 +40,10 @@ La API tiene la capacidad de recibir solicitudes HTTP con datos de entidades y g
 ├───BankRestAPI
 │   ├───Controllers
 │   ├───Data
-│   │   └───Migrations
+│   ├───Migrations
 │   ├───DTOs
 │   ├───Models
 │   ├───Services
-│   └───Utilities
 
 ```
 ## Screenshots
