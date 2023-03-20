@@ -15,7 +15,6 @@ namespace BankRestAPI.Controllers
         private readonly AccountService _accountService;
         private readonly BankService _bankService;
         private readonly CustomerService _customerService;
-        private Bank bankdadsadsad = new Bank();
         
 
         public AccountController(BankDbContext dbContext, ILogger<AccountController> logger, AccountService accountService, BankService bankService, CustomerService customerService)

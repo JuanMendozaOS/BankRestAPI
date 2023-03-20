@@ -116,43 +116,57 @@ namespace BankRestAPI.Controllers
 
             if (fromAccount == null || toAccount == null)
             {
-                validationResult.ErrorMessage = "Al menos una de las cuentas no existe";
+                validationResult.ErrorMessage = "Al menos una de las cuentas no existe.";
                 return validationResult;
             }
 
             if (!validateTransferAmount(transfer, fromAccount))
             {
-                throw new Exception($"Insuficiencia de fondos: {fromAccount.Balance}");
+                throw new Exception($"Insuficiencia de fondos: {fromAccount.Balance}.");
             }
 
             if (!validateCustomers(fromCustomer, toCustomer))
             {
-                validationResult.ErrorMessage = "Al menos uno de los clientes no existe";
+                validationResult.ErrorMessage = "Al menos uno de los clientes no existe.";
                 return validationResult;
             }
 
             // Que el account sea del banco
             if (fromAccount.Bank.Code != fromBank.Code)
             {
-                validationResult.ErrorMessage = $"La cuenta Nro. {fromAccount.Number} no se encuentra registrada en el ban nro. {fromBank.Name}";
+                validationResult.ErrorMessage = $"La cuenta Nro. {fromAccount.Number} no se encuentra registrada en el ban nro. {fromBank.Name}.";
                 return validationResult;
             }
             if (toAccount.Bank.Code != toBank.Code)
             {
-                validationResult.ErrorMessage = $"La cuenta de origen Nro. {toAccount.Number} no se encuentra registrada en el banco de origen {toBank.Name}";
+                validationResult.ErrorMessage = $"La cuenta de origen Nro. {toAccount.Number} no se encuentra registrada en el banco de origen {toBank.Name}.";
                 return validationResult;
             }
 
             // Que el account pertenezca al customer 
             if (fromAccount.Customer.DocumentNumber != fromCustomer.DocumentNumber)
             {
-                validationResult.ErrorMessage = $"La cuenta Nro. {fromAccount.Number} no corresponde al cliente con Document {fromCustomer.DocumentNumber}";
+                validationResult.ErrorMessage = $"La cuenta Nro. {fromAccount.Number} no corresponde al cliente con Document {fromCustomer.DocumentNumber}.";
                 return validationResult;
             }
             if (toAccount.Customer.DocumentNumber != toCustomer.DocumentNumber)
             {
-                validationResult.ErrorMessage = $"La cuenta Nro. {toAccount.Number} no corresponde al cliente con Document {toCustomer.DocumentNumber}";
+                validationResult.ErrorMessage = $"La cuenta Nro. {toAccount.Number} no corresponde al cliente con Document {toCustomer.DocumentNumber}.";
                 return validationResult;
+            }
+
+            if(transfer.Currency != fromAccount.Currency)
+            {
+                validationResult.ErrorMessage = $"La moneda de transferencia debe ser la misma que en la cuenta: {transfer.Currency} -> {fromAccount.Currency}.";
+                return validationResult;
+
+            }
+
+            if (transfer.Currency != toAccount.Currency)
+            {
+                validationResult.ErrorMessage = $"La moneda de transferencia debe ser la misma que en la cuenta: {transfer.Currency} -> {toAccount.Currency}.";
+                return validationResult;
+
             }
 
             validationResult.FromAccount = fromAccount;
